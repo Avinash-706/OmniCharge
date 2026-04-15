@@ -1,0 +1,68 @@
+# ===== Environment Secrets =====
+.env
+.env.local
+!.env.example
+
+# ===== Build Outputs =====
+target/
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# ===== IDE =====
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.kiro/
+
+# ===== Spring Tool Suite =====
+.apt_generated
+.springBeans
+.sts4-cache
+
+# ===== NetBeans =====
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ===== Logs =====
+logs/
+*.log
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Maven =====
+.mvn/wrapper/maven-wrapper.jar
+
+# ===== Misc =====
+*.swp
+*.swo
+*~
+
+# ===== Documentation (excluded from repo) =====
+*.md
+*.docx
+*.txt
+*.png
+!omnicharge-frontend/src/assets/**
+
+# ===== Node Modules & Frontend Build =====
+node_modules/
+dist/
+.angular/
+
+# ===== Elasticsearch config =====
+elasticsearch/
