@@ -16,7 +16,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<!-- SonarCloud -->
-		<sonar.organization>avinash-706</sonar.organization>
+		<sonar.organization>omnicharge706</sonar.organization>
 		<sonar.projectKey>omnicharge_omnicharge-common</sonar.projectKey>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>

@@ -1,0 +1,2477 @@
+{
+	"info": {
+		"_postman_id": "omnicharge-platform-api-collection",
+		"name": "OmniCharge Platform - Complete API Collection",
+		"description": "Comprehensive API collection for all OmniCharge microservices with automated test coverage synchronization",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "omnicharge-platform"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "API Gateway Routes",
+			"item": [
+				{
+					"name": "Public Endpoints",
+					"item": [
+						{
+							"name": "Health Check",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/actuator/health",
+									"host": ["{{base_url}}"],
+									"path": ["actuator", "health"]
+								},
+								"description": "Check API Gateway health status"
+							}
+						}
+					]
+				},
+				{
+					"name": "Gateway Information",
+					"item": [
+						{
+							"name": "Get All Routes",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/actuator/gateway/routes",
+									"host": ["{{base_url}}"],
+									"path": ["actuator", "gateway", "routes"]
+								},
+								"description": "List all configured gateway routes (requires actuator endpoints enabled)"
+							}
+						}
+					]
+				}
+			],
+			"description": "API Gateway is a reactive routing service that forwards requests to downstream microservices. It provides:\n\n- JWT Authentication (JwtAuthenticationFilter)\n- Rate Limiting (Redis-based token bucket)\n- CORS Configuration\n- Request/Response Logging\n- Service Discovery Integration (Eureka)\n\n**Routing Configuration:**\n- User Service: /api/auth/**, /api/users/**\n- Operator Service: /api/operators/**, /api/plans/**, /api/admin/operators/**\n- Recharge Service: /api/recharges/**, /api/admin/recharges/**\n- Payment Service: /api/payments/**, /api/admin/payments/**\n- Notification Service: /api/notifications/**, /api/admin/notifications/**\n\n**Public Paths (No Authentication Required):**\n- /api/auth/register\n- /api/auth/login\n- /api/auth/google\n- /api/auth/refresh-token\n- /api/auth/logout\n- /api/auth/forgot-password\n- /api/auth/verify-otp\n- /api/auth/reset-password\n- /api/operators/detect\n- /api/operators/active\n- /api/operators/\n- /api/plans/\n- /actuator\n\n**Rate Limiting:**\n- 2 requests per second average\n- 3 requests burst capacity\n- Rate limited by X-User-Id header or IP address\n\n**Security Features:**\n- JWT token validation with blacklist check (Redis)\n- User deactivation check (Redis)\n- Profile completion enforcement\n- Security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)\n\n**Note:** The API Gateway does not expose its own business endpoints. It acts as a reverse proxy routing requests to downstream services. All actual API endpoints are documented in their respective service collections (user-service, operator-service, etc.)."
+		},
+		{
+			"name": "User Service",
+			"item": [
+				{
+					"name": "Public Endpoints (No Auth)",
+					"item": [
+						{
+							"name": "Register User",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123\",\n  \"mobileNumber\": \"9876543210\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/register",
+									"host": ["{{base_url}}"],
+									"path": ["api", "auth", "register"]
+								},
+								"description": "Register a new user account. Returns 201 Created on success."
+							}
+						},
+						{
+							"name": "Login",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/login",
+									"host": ["{{base_url}}"],
+									"path": ["api", "auth", "login"]
+								},
+								"description": "Authenticate user with email and password. Returns JWT access token and refresh token."
+							}
+						},
+						{
+							"name": "Google OAuth Login",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"idToken\": \"google_id_token_here\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/google",
+									"host": ["{{base_url}}"],
+									"path": ["api", "auth", "google"]
+								},
+								"description": "Authenticate user with Google OAuth2. Provide Google ID token obtained from frontend."
+							}
+						},
+						{
+							"name": "Refresh Token",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/refresh-token",
+									"host": ["{{base_url}}"],
+									"path": ["api", "auth", "refresh-token"]
+								},
+								"description": "Refresh expired JWT access token using refresh token."
+							}
+						},
+						{
+							"name": "Logout",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/logout",
+									"host": ["{{base_url}}"],
+									"path": ["api", "auth", "logout"]
+								},
+								"description": "Logout user and invalidate JWT token and refresh token. Adds tokens to Redis blacklist."
+							}
+						},
+						{
+							"name": "Forgot Password",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/forgot-password",
+									"host": ["{{base_url}}"],
+									"path": ["api", "auth", "forgot-password"]
+								},
+								"description": "Trigger password reset flow. Sends 6-digit OTP to user's mobile number via SMS."
+							}
+						},
+						{
+							"name": "Verify OTP",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"otp\": \"123456\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/verify-otp",
+									"host": ["{{base_url}}"],
+									"path": ["api", "auth", "verify-otp"]
+								},
+								"description": "Verify OTP sent to mobile number during forgot password flow."
+							}
+						},
+						{
+							"name": "Reset Password",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"NewSecurePass123\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/reset-password",
+									"host": ["{{base_url}}"],
+									"path": ["api", "auth", "reset-password"]
+								},
+								"description": "Reset password after OTP verification. Requires valid OTP."
+							}
+						}
+					],
+					"description": "Public authentication endpoints accessible without JWT token. These endpoints are whitelisted in API Gateway."
+				},
+				{
+					"name": "User Endpoints (ROLE_USER)",
+					"item": [
+						{
+							"name": "Get Profile",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/users/profile",
+									"host": ["{{base_url}}"],
+									"path": ["api", "users", "profile"]
+								},
+								"description": "Get current user's profile information."
+							}
+						},
+						{
+							"name": "Update Profile",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"fullName\": \"John Updated Doe\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/users/profile",
+									"host": ["{{base_url}}"],
+									"path": ["api", "users", "profile"]
+								},
+								"description": "Update user profile. Note: Mobile number cannot be updated here - use mobile verification endpoint."
+							}
+						},
+						{
+							"name": "Change Password",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"currentPassword\": \"SecurePass123\",\n  \"newPassword\": \"NewSecurePass456\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/users/change-password",
+									"host": ["{{base_url}}"],
+									"path": ["api", "users", "change-password"]
+								},
+								"description": "Change user password. Requires current password for verification."
+							}
+						},
+						{
+							"name": "Send Mobile OTP",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mobileNumber\": \"9876543210\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/users/mobile-otp/send",
+									"host": ["{{base_url}}"],
+									"path": ["api", "users", "mobile-otp", "send"]
+								},
+								"description": "Send OTP to mobile number for verification. Used to complete profile or update mobile number."
+							}
+						},
+						{
+							"name": "Verify Mobile OTP",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mobileNumber\": \"9876543210\",\n  \"otp\": \"123456\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/users/mobile-otp/verify",
+									"host": ["{{base_url}}"],
+									"path": ["api", "users", "mobile-otp", "verify"]
+								},
+								"description": "Verify mobile OTP and update user's mobile number. Returns new JWT token with updated profile."
+							}
+						}
+					],
+					"description": "User self-service endpoints. Requires JWT authentication with ROLE_USER. X-User-Id header is automatically injected by API Gateway from JWT token."
+				},
+				{
+					"name": "Admin Endpoints (ROLE_ADMIN)",
+					"item": [
+						{
+							"name": "Get All Users",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/users?page=0&size=10&sortBy=id&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "users"],
+									"query": [
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "10",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "id",
+											"description": "Sort field (id, fullName, email, createdAt)"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Get paginated list of all users with sorting and filtering."
+							}
+						},
+						{
+							"name": "Get User By ID",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/users/1",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "users", "1"]
+								},
+								"description": "Get specific user details by ID."
+							}
+						},
+						{
+							"name": "Toggle User Status",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/users/1/status?active=false",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "users", "1", "status"],
+									"query": [
+										{
+											"key": "active",
+											"value": "false",
+											"description": "true to activate, false to deactivate"
+										}
+									]
+								},
+								"description": "Activate or deactivate user account. Deactivated users cannot login."
+							}
+						},
+						{
+							"name": "Get User Analytics (By Days)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/users/analytics?days=30",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "users", "analytics"],
+									"query": [
+										{
+											"key": "days",
+											"value": "30",
+											"description": "Number of days to analyze (e.g., 7, 30, 90)"
+										}
+									]
+								},
+								"description": "Get user growth analytics for the last N days. Returns total users, active users, new registrations, and daily growth data."
+							}
+						},
+						{
+							"name": "Get User Analytics (By Date Range)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/users/analytics?startDate=2024-01-01T00:00:00&endDate=2024-01-31T23:59:59",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "users", "analytics"],
+									"query": [
+										{
+											"key": "startDate",
+											"value": "2024-01-01T00:00:00",
+											"description": "Start date (ISO 8601 format)"
+										},
+										{
+											"key": "endDate",
+											"value": "2024-01-31T23:59:59",
+											"description": "End date (ISO 8601 format)"
+										}
+									]
+								},
+								"description": "Get user growth analytics for a specific date range. Returns total users, active users, new registrations, and daily growth data."
+							}
+						}
+					],
+					"description": "Admin management endpoints. Requires JWT authentication with ROLE_ADMIN."
+				},
+				{
+					"name": "Internal Endpoints (Service-to-Service)",
+					"item": [
+						{
+							"name": "Get User By ID (Internal)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/users/internal/1",
+									"host": ["{{base_url}}"],
+									"path": ["api", "users", "internal", "1"]
+								},
+								"description": "Internal endpoint for inter-service communication. Called by recharge-service, payment-service via Feign. No authentication required (bypasses gateway JWT)."
+							}
+						},
+						{
+							"name": "Get User By ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/users/1",
+									"host": ["{{base_url}}"],
+									"path": ["api", "users", "1"]
+								},
+								"description": "Get user profile by ID. Used by recharge-service to fetch user email and mobile for notifications."
+							}
+						}
+					],
+					"description": "Internal APIs for inter-service communication. These endpoints are called by other microservices (recharge-service, payment-service, etc.) and do not require authentication as they are behind API Gateway."
+				}
+			],
+			"description": "User Service manages user authentication, authorization, and profile management.\n\n**Features:**\n- User registration and login (email/password)\n- Google OAuth2 authentication\n- JWT token generation and refresh\n- Password reset with OTP (SMS)\n- Mobile number verification with OTP\n- User profile management\n- Admin user management\n- User analytics and growth tracking\n\n**Authentication:**\n- JWT tokens with 24-hour expiration\n- Refresh tokens with 7-day expiration\n- Redis-based token blacklist for logout\n- Multi-device support (max 3 devices, FIFO eviction)\n\n**Security:**\n- BCrypt password hashing\n- Profile completion enforcement (mobile number required)\n- User deactivation check\n- Rate limiting via API Gateway\n\n**Cache Usage (Redis):**\n- JWT blacklist (logout)\n- User deactivation status\n- OTP storage (6-digit, 5-minute TTL)\n- Refresh token storage\n\n**Database:**\n- PostgreSQL for user data persistence\n- Entities: User, Role\n- Audit fields: createdAt, updatedAt\n\n**Test Coverage:**\n- 94% instruction coverage\n- 79% branch coverage\n- 141 tests (140 passing, 1 skipped)\n- Controllers: 100% instruction, 83% branch\n- Services: 96% instruction, 80% branch\n- Config: 69% instruction, 100% branch"
+		},
+		{
+			"name": "Operator Service",
+			"item": [
+				{
+					"name": "Public Endpoints (No Auth)",
+					"item": [
+						{
+							"name": "Detect Operator by Mobile Number",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/operators/detect?mobileNumber=9876543210",
+									"host": ["{{base_url}}"],
+									"path": ["api", "operators", "detect"],
+									"query": [
+										{
+											"key": "mobileNumber",
+											"value": "9876543210",
+											"description": "10-digit Indian mobile number"
+										}
+									]
+								},
+								"description": "Auto-detect operator from mobile number using Numverify API with fallback to prefix-based detection. Returns operator details with available plans."
+							}
+						},
+						{
+							"name": "Get All Active Operators",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/operators/active",
+									"host": ["{{base_url}}"],
+									"path": ["api", "operators", "active"]
+								},
+								"description": "Get list of all active operators for manual selection. Used when auto-detection fails or user wants to manually choose operator."
+							}
+						},
+						{
+							"name": "Get Operator by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/operators/1",
+									"host": ["{{base_url}}"],
+									"path": ["api", "operators", "1"]
+								},
+								"description": "Get specific operator details by ID. Public endpoint for operator information."
+							}
+						},
+						{
+							"name": "Get Plan by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/plans/1",
+									"host": ["{{base_url}}"],
+									"path": ["api", "plans", "1"]
+								},
+								"description": "Get specific plan details by ID. Made public to allow users to browse plans before login and enable Recharge Service integration."
+							}
+						}
+					],
+					"description": "Public operator and plan lookup endpoints. No authentication required. These endpoints allow users to browse operators and plans before registration."
+				},
+				{
+					"name": "User Endpoints (ROLE_USER)",
+					"item": [
+						{
+							"name": "Search Plans",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/plans/search?operatorId=1&category=DATA&minPrice=200&maxPrice=500&page=0&size=10&sortBy=price&sortDir=ASC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "plans", "search"],
+									"query": [
+										{
+											"key": "operatorId",
+											"value": "1",
+											"description": "Operator ID (required)"
+										},
+										{
+											"key": "category",
+											"value": "DATA",
+											"description": "Plan category: RECOMMENDED, DATA, UNLIMITED, TALKTIME, ROAMING"
+										},
+										{
+											"key": "minPrice",
+											"value": "200",
+											"description": "Minimum price filter"
+										},
+										{
+											"key": "maxPrice",
+											"value": "500",
+											"description": "Maximum price filter"
+										},
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "10",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "price",
+											"description": "Sort field (price, validityDays, planName)"
+										},
+										{
+											"key": "sortDir",
+											"value": "ASC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Search and filter plans with pagination. Only returns plans of active operators."
+							}
+						}
+					],
+					"description": "User endpoints for plan search and filtering. Requires JWT authentication with ROLE_USER."
+				},
+				{
+					"name": "Admin Endpoints (ROLE_ADMIN)",
+					"item": [
+						{
+							"name": "Operator Management",
+							"item": [
+								{
+									"name": "Get All Operators",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators?status=ALL",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators"],
+											"query": [
+												{
+													"key": "status",
+													"value": "ALL",
+													"description": "Filter: ACTIVE, INACTIVE, or ALL (default: ALL)"
+												}
+											]
+										},
+										"description": "Get all operators with optional status filter. Allows viewing active, inactive, or all operators."
+									}
+								},
+								{
+									"name": "Create Operator",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"MTNL\",\n  \"code\": \"MTNL\",\n  \"category\": \"PREPAID\",\n  \"logoUrl\": \"https://example.com/mtnl-logo.png\"\n}"
+										},
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators"]
+										},
+										"description": "Create new operator. Code must be unique."
+									}
+								},
+								{
+									"name": "Update Operator",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"MTNL Delhi\",\n  \"code\": \"MTNL\",\n  \"category\": \"PREPAID\",\n  \"logoUrl\": \"https://example.com/mtnl-new-logo.png\"\n}"
+										},
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/5",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "5"]
+										},
+										"description": "Update operator details (name, code, category, logo)."
+									}
+								},
+								{
+									"name": "Delete Operator",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/5",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "5"]
+										},
+										"description": "Soft delete operator. Cascades to all associated plans."
+									}
+								},
+								{
+									"name": "Activate Operator",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PATCH",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/5/activate",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "5", "activate"]
+										},
+										"description": "Activate operator and restore plans that were deactivated by operator deactivation."
+									}
+								},
+								{
+									"name": "Deactivate Operator",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PATCH",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/5/deactivate",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "5", "deactivate"]
+										},
+										"description": "Deactivate operator and cascade deactivation to all active plans."
+									}
+								}
+							],
+							"description": "Operator CRUD and status management endpoints."
+						},
+						{
+							"name": "Plan Management",
+							"item": [
+								{
+									"name": "Get Operator Plans",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/1/plans?status=ACTIVE",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "1", "plans"],
+											"query": [
+												{
+													"key": "status",
+													"value": "ACTIVE",
+													"description": "Filter: ACTIVE, INACTIVE, or ALL (default: ACTIVE)"
+												}
+											]
+										},
+										"description": "Get all plans for specific operator with optional status filter."
+									}
+								},
+								{
+									"name": "Search All Plans",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/plans?operatorId=1&status=ALL&category=DATA&page=0&size=10",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "plans"],
+											"query": [
+												{
+													"key": "operatorId",
+													"value": "1",
+													"description": "Filter by operator ID"
+												},
+												{
+													"key": "status",
+													"value": "ALL",
+													"description": "Filter: ACTIVE, INACTIVE, or ALL"
+												},
+												{
+													"key": "category",
+													"value": "DATA",
+													"description": "Filter by plan category"
+												},
+												{
+													"key": "page",
+													"value": "0",
+													"description": "Page number"
+												},
+												{
+													"key": "size",
+													"value": "10",
+													"description": "Page size"
+												}
+											]
+										},
+										"description": "Search all plans across operators with filters and pagination."
+									}
+								},
+								{
+									"name": "Create Plan",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"planName\": \"Super Saver Pack\",\n  \"price\": 399,\n  \"validityDays\": 56,\n  \"dataLimit\": \"1GB/day\",\n  \"callBenefit\": \"Unlimited\",\n  \"smsBenefit\": \"100 SMS/day\",\n  \"additionalBenefits\": \"Free Wynk Music\",\n  \"category\": \"DATA\"\n}"
+										},
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/1/plans",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "1", "plans"]
+										},
+										"description": "Create new plan for operator."
+									}
+								},
+								{
+									"name": "Update Plan",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"planName\": \"Super Saver Pack Updated\",\n  \"price\": 449,\n  \"validityDays\": 56,\n  \"dataLimit\": \"1.5GB/day\",\n  \"callBenefit\": \"Unlimited\",\n  \"smsBenefit\": \"100 SMS/day\",\n  \"additionalBenefits\": \"Free Wynk Music + Amazon Prime\",\n  \"category\": \"RECOMMENDED\"\n}"
+										},
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/plans/9",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "plans", "9"]
+										},
+										"description": "Update plan details. Does NOT change active status - use activate/deactivate endpoints for status changes."
+									}
+								},
+								{
+									"name": "Delete Plan",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/plans/9",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "plans", "9"]
+										},
+										"description": "Soft delete plan (same as deactivate). Can be restored using activate endpoint."
+									}
+								},
+								{
+									"name": "Activate Plan",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PATCH",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/plans/10/activate",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "plans", "10", "activate"]
+										},
+										"description": "Activate plan. Can only activate if operator is active."
+									}
+								},
+								{
+									"name": "Deactivate Plan",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PATCH",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/operators/plans/10/deactivate",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "operators", "plans", "10", "deactivate"]
+										},
+										"description": "Deactivate plan (same as delete). Can be restored using activate endpoint."
+									}
+								}
+							],
+							"description": "Plan CRUD and status management endpoints."
+						},
+						{
+							"name": "System Administration",
+							"item": [
+								{
+									"name": "Rebuild Redis Cache",
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{jwt_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/admin/system/rebuild-cache",
+											"host": ["{{base_url}}"],
+											"path": ["api", "admin", "system", "rebuild-cache"]
+										},
+										"description": "Manually trigger full Redis cache rebuild for all active plans. Used for cache synchronization."
+									}
+								}
+							],
+							"description": "System administration endpoints for cache management."
+						}
+					],
+					"description": "Admin endpoints for operator and plan management. Requires JWT authentication with ROLE_ADMIN."
+				}
+			],
+			"description": "Operator Service manages mobile operators (Airtel, Jio, Vi, BSNL) and their recharge plans.\n\n**Features:**\n- Operator detection via mobile number (Numverify API + prefix-based fallback)\n- Manual operator selection\n- Plan search and filtering\n- Admin operator and plan management\n- Cascading activation/deactivation\n- Redis cache for high-performance plan lookup\n- RabbitMQ event publishing for cache synchronization\n\n**Architecture:**\n- Controllers: AdminOperatorController, AdminSystemController, OperatorDetectionController, PlanController\n- Services: OperatorService, PlanService, OperatorDetectionService, PlanQueryService, SystemCacheService\n- Repositories: OperatorRepository, PlanRepository\n- Entities: Operator, Plan\n- Enums: OperatorCategory (PREPAID, POSTPAID), PlanCategory (RECOMMENDED, DATA, UNLIMITED, TALKTIME, ROAMING)\n\n**Cache Usage (Redis):**\n- Plan cache by operator ID (key: planCache::{operatorId})\n- Plan detail cache (key: planDetail::{planId})\n- Auto-rebuild on cold start\n- Manual rebuild via admin endpoint\n- Event-driven cache invalidation via RabbitMQ\n\n**RabbitMQ Integration:**\n- Exchange: operator.events\n- Queues: plan.update.queue\n- Events: PlanUpdatedMessage\n- RedisProjector listens for plan updates and syncs cache\n\n**Database:**\n- MySQL (omnicharge_operator_db)\n- Tables: operators, plans\n- Seeded data: 4 operators (Airtel, Jio, Vi, BSNL), 8 plans\n\n**External APIs:**\n- Numverify API for operator detection (optional, with fallback)\n\n**Test Coverage:**\n- 83% instruction coverage\n- 57% branch coverage\n- 313 tests (all passing)\n- Controllers: 96% instruction, 78% branch\n- Services: 79% instruction, 45% branch\n- Config: 84% instruction, 100% branch\n- Client: 100% instruction, 100% branch\n- Entity: 100% instruction\n\n**Key Features:**\n1. **Cascading Status Management**: Deactivating operator cascades to plans, reactivating restores only operator-deactivated plans\n2. **Smart Cache**: Redis cache with auto-rebuild, manual rebuild, and event-driven invalidation\n3. **Public Plan Access**: GET /api/plans/{id} made public for better UX and Recharge Service integration\n4. **Status Filtering**: Admin can filter operators/plans by ACTIVE, INACTIVE, or ALL\n5. **Separate Activate/Deactivate**: Dedicated endpoints for status management (vs UPDATE for details only)"
+		},
+		{
+			"name": "Recharge Service",
+			"item": [
+				{
+					"name": "User Endpoints (ROLE_USER)",
+					"item": [
+						{
+							"name": "Initiate Recharge",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mobileNumber\": \"9876543210\",\n  \"operatorId\": 1,\n  \"planId\": 5,\n  \"paymentMethod\": \"UPI\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/recharges",
+									"host": ["{{base_url}}"],
+									"path": ["api", "recharges"]
+								},
+								"description": "Initiates a new recharge and publishes RechargeInitiatedEvent for SAGA orchestration. Returns 201 Created with recharge details including PENDING status."
+							}
+						},
+						{
+							"name": "Get Recharge by ID",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/recharges/RCH-1234567890",
+									"host": ["{{base_url}}"],
+									"path": ["api", "recharges", "RCH-1234567890"]
+								},
+								"description": "Retrieves a specific recharge by ID. Users can only access their own recharges. Returns recharge details with status, amount, operator, plan info, and expiry date."
+							}
+						},
+						{
+							"name": "Get Recharge History",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/recharges/history?page=0&size=10&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "recharges", "history"],
+									"query": [
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "10",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field (createdDate, amount, status)"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Retrieves paginated recharge history for the authenticated user. Supports sorting by createdDate, amount, or status."
+							}
+						},
+						{
+							"name": "Get Recharge Status",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/recharges/status/RCH-1234567890",
+									"host": ["{{base_url}}"],
+									"path": ["api", "recharges", "status", "RCH-1234567890"]
+								},
+								"description": "Retrieves the current status of a recharge (PENDING, SUCCESS, FAILED, EXPIRED). Lightweight endpoint for status polling."
+							}
+						}
+					],
+					"description": "User recharge endpoints. Requires JWT authentication with ROLE_USER. X-User-Id header is automatically injected by API Gateway from JWT token."
+				},
+				{
+					"name": "Admin Endpoints (ROLE_ADMIN)",
+					"item": [
+						{
+							"name": "Get All Recharges",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/recharges?page=0&size=10&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "recharges"],
+									"query": [
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "10",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Retrieves all recharges across all users (admin view). Supports pagination and sorting."
+							}
+						},
+						{
+							"name": "Get Recharge Statistics",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/recharges/stats",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "recharges", "stats"]
+								},
+								"description": "Retrieves basic recharge statistics: total recharges, success count, failed count, and total revenue amount."
+							}
+						},
+						{
+							"name": "Get Recharge Analytics (Master BI)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/recharges/analytics?days=30",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "recharges", "analytics"],
+									"query": [
+										{
+											"key": "days",
+											"value": "30",
+											"description": "Number of days to analyze (optional, null = all time)"
+										}
+									]
+								},
+								"description": "Comprehensive BI analytics endpoint with volume metrics, success rate, active vs expired ratio, top plans performance, and operator market share. Master dashboard endpoint."
+							}
+						},
+						{
+							"name": "Get Operator Plans (Drill-Down)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/recharges/operator/1/plans",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "recharges", "operator", "1", "plans"]
+								},
+								"description": "Drill-down endpoint: Retrieves all plans for a specific operator with recharge statistics (count and revenue per plan)."
+							}
+						},
+						{
+							"name": "Get Plan Recharge History (Drill-Down)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/recharges/plan/5/history?status=SUCCESS&search=9876&page=0&size=20&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "recharges", "plan", "5", "history"],
+									"query": [
+										{
+											"key": "status",
+											"value": "SUCCESS",
+											"description": "Filter by status (PENDING, SUCCESS, FAILED, EXPIRED)"
+										},
+										{
+											"key": "search",
+											"value": "9876",
+											"description": "Search by mobile number or user name"
+										},
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number"
+										},
+										{
+											"key": "size",
+											"value": "20",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction"
+										}
+									]
+								},
+								"description": "Drill-down endpoint: Retrieves recharge history for a specific plan with filtering by status and search capabilities."
+							}
+						},
+						{
+							"name": "Get Operator Recharge History (Drill-Down)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/recharges/operator/1/history?status=SUCCESS&search=9876&page=0&size=20&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "recharges", "operator", "1", "history"],
+									"query": [
+										{
+											"key": "status",
+											"value": "SUCCESS",
+											"description": "Filter by status (PENDING, SUCCESS, FAILED, EXPIRED)"
+										},
+										{
+											"key": "search",
+											"value": "9876",
+											"description": "Search by mobile number or user name"
+										},
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number"
+										},
+										{
+											"key": "size",
+											"value": "20",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction"
+										}
+									]
+								},
+								"description": "Drill-down endpoint: Retrieves recharge history for a specific operator with filtering and search capabilities."
+							}
+						},
+						{
+							"name": "Get User Recharge History (Drill-Down)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/recharges/user/1/history?status=SUCCESS&search=9876&page=0&size=20&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "recharges", "user", "1", "history"],
+									"query": [
+										{
+											"key": "status",
+											"value": "SUCCESS",
+											"description": "Filter by status (PENDING, SUCCESS, FAILED, EXPIRED)"
+										},
+										{
+											"key": "search",
+											"value": "9876",
+											"description": "Search by mobile number or user name"
+										},
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number"
+										},
+										{
+											"key": "size",
+											"value": "20",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction"
+										}
+									]
+								},
+								"description": "Drill-down endpoint: Retrieves recharge history for a specific user with filtering and search capabilities. Admin can view any user's recharge history."
+							}
+						}
+					],
+					"description": "Admin analytics and drill-down endpoints. Requires JWT authentication with ROLE_ADMIN. Provides comprehensive BI metrics, operator/plan/user drill-downs with advanced filtering."
+				},
+				{
+					"name": "Internal Endpoints (Service-to-Service)",
+					"item": [
+						{
+							"name": "Get Recharge by ID (Internal)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/internal/recharges/RCH-1234567890",
+									"host": ["{{base_url}}"],
+									"path": ["api", "internal", "recharges", "RCH-1234567890"]
+								},
+								"description": "Internal endpoint for cross-service lookup (no auth required). Used by payment-service to fetch recharge details for notification enrichment."
+							}
+						},
+						{
+							"name": "Get Expiring Recharges",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/internal/recharges/expiring?daysLeft=5",
+									"host": ["{{base_url}}"],
+									"path": ["api", "internal", "recharges", "expiring"],
+									"query": [
+										{
+											"key": "daysLeft",
+											"value": "5",
+											"description": "Number of days before expiry (default: 5)"
+										}
+									]
+								},
+								"description": "Retrieves recharges expiring within specified days. Used by notification service for expiry reminder notifications."
+							}
+						},
+						{
+							"name": "Get Expired Today",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/internal/recharges/expired-today",
+									"host": ["{{base_url}}"],
+									"path": ["api", "internal", "recharges", "expired-today"]
+								},
+								"description": "Retrieves recharges that expired today. Used by notification service for expired plan notifications."
+							}
+						},
+						{
+							"name": "Mark as Expired",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/internal/recharges/RCH-1234567890/expire",
+									"host": ["{{base_url}}"],
+									"path": ["api", "internal", "recharges", "RCH-1234567890", "expire"]
+								},
+								"description": "Marks a recharge as expired. Called by scheduler (RechargeExpirySweeperTask) or notification service after sending expiry notifications."
+							}
+						}
+					],
+					"description": "Internal APIs for inter-service communication. These endpoints are called by other microservices (payment-service, notification-service) and do not require authentication as they bypass API Gateway."
+				}
+			],
+			"description": "Recharge Service manages mobile recharge operations with SAGA orchestration, analytics, and expiry management.\n\n**Port:** 8083\n**Database:** omnicharge_recharge_db (MySQL)\n\n**Features:**\n- SAGA orchestration with payment service via RabbitMQ\n- Comprehensive BI analytics with drill-down capabilities\n- Automated expiry detection and management\n- User enrichment from user-service\n- Circuit breaker for resilience\n- Advanced filtering and search\n\n**Architecture:**\n- Controllers: RechargeController, AdminRechargeController, InternalRechargeController\n- Services: RechargeService with SAGA orchestration\n- Repositories: RechargeRepository with custom analytics queries\n- Entities: Recharge\n- Enums: RechargeStatus (PENDING, SUCCESS, FAILED, EXPIRED)\n\n**SAGA Orchestration:**\n- Exchange: recharge.events\n- Queues: recharge.initiated.queue, payment.approved.queue, payment.failed.queue\n- Events: RechargeInitiatedEvent, PaymentApprovedEvent, PaymentFailedEvent\n- Flow: Recharge → Payment → Notification\n\n**Circuit Breaker:**\n- Operator Service: Fallback returns null if service is down\n- User Service: Graceful degradation, continues without user details\n\n**Scheduled Tasks:**\n- RechargeExpirySweeperTask: Runs daily at 2 AM to detect and mark expired recharges\n\n**External Integrations:**\n- Operator Service: Feign client for operator and plan lookup\n- User Service: Feign client for user profile enrichment\n- Payment Service: SAGA orchestration via RabbitMQ\n\n**Test Coverage:**\n- 94% line coverage (2,582 of 2,732 lines)\n- 87% branch coverage (103 of 118 branches)\n- 145 tests (all passing)\n- Controllers: 91% instruction, 75% branch\n- Services: 99% instruction, 89% branch\n\n**Key Features:**\n1. **SAGA Orchestration**: Event-driven recharge workflow with payment service\n2. **Comprehensive Analytics**: Master BI endpoint with drill-down capabilities\n3. **Expiry Management**: Automated detection and notification of expiring recharges\n4. **User Enrichment**: Fetches user details from user-service for better UX\n5. **Search & Filtering**: Advanced search by mobile number, status filtering\n6. **Pagination & Sorting**: Efficient data retrieval with customizable sorting"
+		},
+		{
+			"name": "Payment Service",
+			"item": [
+				{
+					"name": "User Endpoints (ROLE_USER)",
+					"item": [
+						{
+							"name": "Process Payment",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"rechargeId\": \"RCH-1234567890\",\n  \"userId\": 1,\n  \"amount\": 399.00,\n  \"paymentMethod\": \"UPI\",\n  \"userEmail\": \"user@example.com\",\n  \"userMobile\": \"9876543210\",\n  \"mobileNumber\": \"9876543210\",\n  \"operatorName\": \"Airtel\",\n  \"planName\": \"Unlimited 84 Days\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/payments/process",
+									"host": ["{{base_url}}"],
+									"path": ["api", "payments", "process"]
+								},
+								"description": "Process payment via Razorpay. Creates transaction with PENDING status, generates Razorpay order, and returns order details for frontend checkout. Security: userId in request must match X-User-Id header."
+							}
+						},
+						{
+							"name": "Get Transaction by ID",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/payments/TXN-1234567890",
+									"host": ["{{base_url}}"],
+									"path": ["api", "payments", "TXN-1234567890"]
+								},
+								"description": "Get transaction details by transaction ID. Users can only access their own transactions. Returns full transaction details including status, amount, payment method, and enrichment data."
+							}
+						},
+						{
+							"name": "Confirm Payment (Webhook)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/payments/webhook/confirm/TXN-1234567890?razorpayPaymentId=pay_123456&razorpaySignature=abc123",
+									"host": ["{{base_url}}"],
+									"path": ["api", "payments", "webhook", "confirm", "TXN-1234567890"],
+									"query": [
+										{
+											"key": "razorpayPaymentId",
+											"value": "pay_123456",
+											"description": "Razorpay payment ID"
+										},
+										{
+											"key": "razorpaySignature",
+											"value": "abc123",
+											"description": "Razorpay signature for verification"
+										}
+									]
+								},
+								"description": "Webhook endpoint called by Razorpay or frontend after successful payment. Updates transaction status to SUCCESS and publishes PaymentApprovedEvent to SAGA. No authentication required (public webhook)."
+							}
+						},
+						{
+							"name": "Fail Payment (Webhook)",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/payments/webhook/fail/TXN-1234567890?reason=Payment cancelled by user",
+									"host": ["{{base_url}}"],
+									"path": ["api", "payments", "webhook", "fail", "TXN-1234567890"],
+									"query": [
+										{
+											"key": "reason",
+											"value": "Payment cancelled by user",
+											"description": "Failure reason (optional, default: 'Payment cancelled by user')"
+										}
+									]
+								},
+								"description": "Webhook endpoint to mark payment as failed. Updates transaction status to FAILED and publishes PaymentRejectedEvent to SAGA. No authentication required (public webhook)."
+							}
+						},
+						{
+							"name": "Get Payment History",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/payments/history?transactionId=&minAmount=100&maxAmount=500&status=SUCCESS&startDate=2026-01-01T00:00:00&endDate=2026-12-31T23:59:59&page=0&size=10&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "payments", "history"],
+									"query": [
+										{
+											"key": "transactionId",
+											"value": "",
+											"description": "Filter by transaction ID (optional)"
+										},
+										{
+											"key": "minAmount",
+											"value": "100",
+											"description": "Minimum amount filter (optional)"
+										},
+										{
+											"key": "maxAmount",
+											"value": "500",
+											"description": "Maximum amount filter (optional)"
+										},
+										{
+											"key": "status",
+											"value": "SUCCESS",
+											"description": "Filter by status: PENDING, SUCCESS, FAILED (optional)"
+										},
+										{
+											"key": "startDate",
+											"value": "2026-01-01T00:00:00",
+											"description": "Start date (ISO 8601 format, optional)"
+										},
+										{
+											"key": "endDate",
+											"value": "2026-12-31T23:59:59",
+											"description": "End date (ISO 8601 format, optional)"
+										},
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "10",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field (createdDate, amount, status)"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Get paginated payment history for authenticated user with comprehensive filtering. Users can only see their own transactions. Supports filtering by amount range, status, date range, and sorting."
+							}
+						}
+					],
+					"description": "User payment endpoints. Requires JWT authentication with ROLE_USER. X-User-Id header is automatically injected by API Gateway from JWT token. Users can only access their own payment data."
+				},
+				{
+					"name": "Admin Endpoints (ROLE_ADMIN)",
+					"item": [
+						{
+							"name": "Get All Transactions",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Role",
+										"value": "ADMIN",
+										"description": "User role extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/admin/payments?userId=1&minAmount=100&maxAmount=1000&status=SUCCESS&startDate=2026-01-01T00:00:00&endDate=2026-12-31T23:59:59&rechargeId=RCH-123&page=0&size=10&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "payments"],
+									"query": [
+										{
+											"key": "userId",
+											"value": "1",
+											"description": "Filter by user ID (optional)"
+										},
+										{
+											"key": "minAmount",
+											"value": "100",
+											"description": "Minimum amount filter (optional)"
+										},
+										{
+											"key": "maxAmount",
+											"value": "1000",
+											"description": "Maximum amount filter (optional)"
+										},
+										{
+											"key": "status",
+											"value": "SUCCESS",
+											"description": "Filter by status: PENDING, SUCCESS, FAILED (optional)"
+										},
+										{
+											"key": "startDate",
+											"value": "2026-01-01T00:00:00",
+											"description": "Start date (ISO 8601 format, optional)"
+										},
+										{
+											"key": "endDate",
+											"value": "2026-12-31T23:59:59",
+											"description": "End date (ISO 8601 format, optional)"
+										},
+										{
+											"key": "rechargeId",
+											"value": "RCH-123",
+											"description": "Filter by recharge ID (optional)"
+										},
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "10",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field (createdDate, amount, status)"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Get all transactions across all users (admin view). Supports comprehensive filtering by user, amount range, status, date range, and recharge ID. Requires ROLE_ADMIN."
+							}
+						},
+						{
+							"name": "Get Payment Statistics",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Role",
+										"value": "ADMIN",
+										"description": "User role extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/admin/payments/stats?days=30",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "payments", "stats"],
+									"query": [
+										{
+											"key": "days",
+											"value": "30",
+											"description": "Number of days for statistics (optional, default: 30)"
+										}
+									]
+								},
+								"description": "Get payment statistics including total transactions, success/failed counts, total revenue, average transaction amount, today's metrics, daily revenue trends, and top users. Requires ROLE_ADMIN."
+							}
+						},
+						{
+							"name": "Get Payment Analytics",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/payments/analytics?days=30",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "payments", "analytics"],
+									"query": [
+										{
+											"key": "days",
+											"value": "30",
+											"description": "Number of days for analytics (optional, default: 30)"
+										}
+									]
+								},
+								"description": "Master BI endpoint with comprehensive payment metrics including revenue metrics, transaction counts, conversion metrics, revenue growth (MoM), top spenders, and daily revenue trends. Requires ROLE_ADMIN."
+							}
+						},
+						{
+							"name": "Get Top Spenders",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/payments/top-spenders?limit=10&days=30",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "payments", "top-spenders"],
+									"query": [
+										{
+											"key": "limit",
+											"value": "10",
+											"description": "Number of top spenders to return (optional, default: 10)"
+										},
+										{
+											"key": "days",
+											"value": "30",
+											"description": "Number of days to analyze (optional, null = all time)"
+										}
+									]
+								},
+								"description": "Get top spenders (whales) with dynamic limit and time filter. Returns detailed user spending statistics including transaction count, total spent, average transaction value, success rate, and transaction dates. Requires ROLE_ADMIN."
+							}
+						},
+						{
+							"name": "Get User Transactions (Drill-Down)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/payments/user/1/transactions?status=SUCCESS&search=9876&page=0&size=20&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "payments", "user", "1", "transactions"],
+									"query": [
+										{
+											"key": "status",
+											"value": "SUCCESS",
+											"description": "Filter by status: PENDING, SUCCESS, FAILED (optional)"
+										},
+										{
+											"key": "search",
+											"value": "9876",
+											"description": "Search by transaction ID or recharge ID (optional)"
+										},
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "20",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field (createdDate, amount, status)"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Drill-down endpoint: Get all transactions for a specific user with sorting and filtering. Supports status filtering and search by transaction/recharge ID. Requires ROLE_ADMIN."
+							}
+						}
+					],
+					"description": "Admin payment management and analytics endpoints. Requires JWT authentication with ROLE_ADMIN. Provides comprehensive BI metrics, transaction monitoring, and user drill-down capabilities."
+				}
+			],
+			"description": "Payment Service handles payment processing, transaction management, and Razorpay integration for the OmniCharge platform.\n\n**Port:** 8084\n**Database:** omnicharge_payment_db (MySQL)\n\n**Features:**\n- Razorpay payment gateway integration\n- SAGA orchestration with recharge service via RabbitMQ\n- Comprehensive BI analytics with drill-down capabilities\n- Transaction history with advanced filtering\n- Webhook handling for payment confirmation/failure\n- User enrichment from user-service\n\n**Architecture:**\n- Controllers: PaymentController, AdminPaymentController\n- Services: PaymentService, RazorpayPaymentService\n- Repositories: TransactionRepository with custom analytics queries\n- Entities: Transaction\n- Enums: PaymentStatus (PENDING, SUCCESS, FAILED), PaymentMethod (CREDIT_CARD, DEBIT_CARD, UPI, NET_BANKING, RAZORPAY)\n\n**SAGA Orchestration:**\n- Exchange: recharge.events, payment.events\n- Queues: recharge.initiated.queue, payment.approved.queue, payment.rejected.queue\n- Events: RechargeInitiatedEvent (consumed), PaymentApprovedEvent (published), PaymentRejectedEvent (published)\n- Flow: Recharge → Payment → Notification\n\n**Razorpay Integration:**\n- RazorpayClient injected via @Bean (RazorpayConfig)\n- Order creation with amount in paise (INR smallest unit)\n- Payment confirmation via webhook\n- Refund processing support\n- Payment ID fetching for orders\n\n**Test Coverage:**\n- 94% instruction coverage (exceeds 90% target)\n- 83% branch coverage (exceeds 85% target)\n- 291 tests (all passing)\n- Controllers: 85% instruction, 75% branch (AdminPaymentController: 89%, PaymentController: 79%)\n- Services: 96% instruction, 81% branch (RazorpayPaymentService: 100%, PaymentService: 95%)\n- Config: 60% instruction, 100% branch (includes RazorpayConfig)\n\n**Key Features:**\n1. **SAGA Orchestration**: Event-driven payment workflow with recharge service\n2. **Razorpay Integration**: Dependency injection pattern for testability and performance\n3. **Comprehensive Analytics**: Master BI endpoint with drill-down capabilities\n4. **Transaction Management**: Complete audit trail with status tracking\n5. **Webhook Support**: Public endpoints for payment confirmation/failure\n6. **Search & Filtering**: Advanced filtering by amount, status, date, user, recharge ID\n7. **Pagination & Sorting**: Efficient data retrieval with customizable sorting\n\n**Payment Methods:**\n- CREDIT_CARD: Credit card payments\n- DEBIT_CARD: Debit card payments\n- UPI: UPI payments (India)\n- NET_BANKING: Internet banking\n- RAZORPAY: Generic Razorpay payment\n\n**Payment Statuses:**\n- PENDING: Payment initiated, awaiting confirmation\n- SUCCESS: Payment completed successfully\n- FAILED: Payment failed or rejected\n\n**External Integrations:**\n- Razorpay: Payment gateway for processing payments\n- User Service: Feign client for user profile enrichment\n- Recharge Service: SAGA orchestration via RabbitMQ\n\n**Security:**\n- User isolation: Users can only access their own transactions\n- Admin access: ROLE_ADMIN required for admin endpoints\n- Webhook security: Razorpay signature verification (in production)\n- JWT authentication via API Gateway"
+		},
+		{
+			"name": "Notification Service",
+			"item": [
+				{
+					"name": "User Endpoints (ROLE_USER)",
+					"item": [
+						{
+							"name": "Get User Notifications",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/notifications?page=0&size=10&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "notifications"],
+									"query": [
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "10",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field (createdDate, type, category, status)"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Get paginated notification history for authenticated user. Returns notifications with type (EMAIL/SMS), category (PAYMENT_SUCCESS, PAYMENT_FAILED, PLAN_EXPIRY_REMINDER, PLAN_EXPIRED), status (PENDING/SENT/FAILED), and read status."
+							}
+						},
+						{
+							"name": "Mark Notification as Read",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/notifications/1/read",
+									"host": ["{{base_url}}"],
+									"path": ["api", "notifications", "1", "read"]
+								},
+								"description": "Mark notification as read. Users can only mark their own notifications. Returns 400 Bad Request if notification doesn't belong to user."
+							}
+						},
+						{
+							"name": "Get Unread Count",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "1",
+										"description": "User ID extracted from JWT by API Gateway"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/notifications/unread-count",
+									"host": ["{{base_url}}"],
+									"path": ["api", "notifications", "unread-count"]
+								},
+								"description": "Get count of unread notifications for authenticated user. Lightweight endpoint for UI badge polling."
+							}
+						}
+					],
+					"description": "User notification endpoints. Requires JWT authentication with ROLE_USER. X-User-Id header is automatically injected by API Gateway from JWT token. Users can only access their own notifications."
+				},
+				{
+					"name": "Admin Endpoints (ROLE_ADMIN)",
+					"item": [
+						{
+							"name": "Get All Notifications",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/admin/notifications?page=0&size=20&sortBy=createdDate&sortDir=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "notifications"],
+									"query": [
+										{
+											"key": "page",
+											"value": "0",
+											"description": "Page number (0-indexed)"
+										},
+										{
+											"key": "size",
+											"value": "20",
+											"description": "Page size"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdDate",
+											"description": "Sort field (createdDate, type, category, status)"
+										},
+										{
+											"key": "sortDir",
+											"value": "DESC",
+											"description": "Sort direction (ASC or DESC)"
+										}
+									]
+								},
+								"description": "Get all notifications across all users (admin view). Supports pagination and sorting. Requires ROLE_ADMIN."
+							}
+						},
+						{
+							"name": "Send Executive Report Email",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"adminEmail\": \"admin@omnicharge.com\",\n  \"reportSubject\": \"OmniCharge Executive Summary Report - Q1 2026\",\n  \"reportHtml\": \"<html><body><h1>Executive Summary</h1><p>Total Revenue: ₹1,250,000</p></body></html>\",\n  \"pdfBase64\": \"JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9UeXBlIC9QYWdlCi9QYXJlbnQgMSAwIFIKL01lZGlhQm94IFswIDAgNjEyIDc5Ml0KL0NvbnRlbnRzIDQgMCBSCj4+CmVuZG9iago0IDAgb2JqCjw8L0xlbmd0aCA0Nj4+CnN0cmVhbQpCVAovRjEgMTIgVGYKNzIgNzIwIFRkCihIZWxsbyBXb3JsZCkgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagoxIDAgb2JqCjw8L1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKL01lZGlhQm94IFswIDAgNjEyIDc5Ml0KPj4KZW5kb2JqCjUgMCBvYmoKPDwvVHlwZSAvRm9udAovU3VidHlwZSAvVHlwZTEKL0Jhc2VGb250IC9IZWx2ZXRpY2EKPj4KZW5kb2JqCjIgMCBvYmoKPDwvVHlwZSAvQ2F0YWxvZwovUGFnZXMgMSAwIFIKPj4KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDE3NCAwMDAwMCBuIAowMDAwMDAwMjY1IDAwMDAwIG4gCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDEwOCAwMDAwMCBuIAowMDAwMDAwMjE0IDAwMDAwIG4gCnRyYWlsZXIKPDwvU2l6ZSA2Ci9Sb290IDIgMCBSCj4+CnN0YXJ0eHJlZgozMTQKJSVFT0Y=\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/admin/reports/send-email",
+									"host": ["{{base_url}}"],
+									"path": ["api", "admin", "reports", "send-email"]
+								},
+								"description": "Send executive report email with Base64 PDF attachment. Frontend generates PDF, encodes to Base64, and sends here for dispatch. Supports HTML-only emails if no PDF provided. Currently hardcoded to send to avunashdhanuka@gmail.com for testing. Requires ROLE_ADMIN."
+							}
+						}
+					],
+					"description": "Admin notification management endpoints. Requires JWT authentication with ROLE_ADMIN. Provides notification monitoring and executive report dispatch with Base64 PDF support."
+				},
+				{
+					"name": "Public Endpoints (No Auth)",
+					"item": [
+						{
+							"name": "Test Email",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/test/email?toEmail=test@example.com",
+									"host": ["{{base_url}}"],
+									"path": ["api", "test", "email"],
+									"query": [
+										{
+											"key": "toEmail",
+											"value": "test@example.com",
+											"description": "Email address to send test email (optional, default: avunashdhanuka@gmail.com)"
+										}
+									]
+								},
+								"description": "Test email sending functionality. Sends test email to specified address. No authentication required. Used for testing Gmail SMTP configuration."
+							}
+						},
+						{
+							"name": "Test SMS",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/test/sms?toMobile=+919876543210",
+									"host": ["{{base_url}}"],
+									"path": ["api", "test", "sms"],
+									"query": [
+										{
+											"key": "toMobile",
+											"value": "+919876543210",
+											"description": "Mobile number to send test SMS (optional, default: +919876543210)"
+										}
+									]
+								},
+								"description": "Test SMS sending functionality. Sends test SMS to specified mobile number. No authentication required. Used for testing Twilio configuration."
+							}
+						},
+						{
+							"name": "Test Database",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/test/database",
+									"host": ["{{base_url}}"],
+									"path": ["api", "test", "database"]
+								},
+								"description": "Test database operations. Creates test notification record and returns notification ID and total count. No authentication required. Used for testing MySQL connectivity."
+							}
+						},
+						{
+							"name": "Test All Components",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/test/all",
+									"host": ["{{base_url}}"],
+									"path": ["api", "test", "all"]
+								},
+								"description": "Test all components (email, SMS, database) simultaneously. Returns status for each component. No authentication required. Comprehensive health check endpoint."
+							}
+						},
+						{
+							"name": "Get Notification Count",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/test/count",
+									"host": ["{{base_url}}"],
+									"path": ["api", "test", "count"]
+								},
+								"description": "Get total notification count in database. No authentication required. Lightweight endpoint for monitoring."
+							}
+						}
+					],
+					"description": "Public testing endpoints for email, SMS, and database functionality. No authentication required. Used for testing and monitoring notification service components."
+				}
+			],
+			"description": "Notification Service handles email and SMS notifications for the OmniCharge platform. It consumes events from RabbitMQ, provides APIs for users to view their notification history, and includes admin endpoints for executive report dispatch with Base64 PDF support.\n\n**Port:** 8085\n**Database:** omnicharge_notification_db (MySQL)\n\n**Features:**\n- Email notifications (Gmail SMTP)\n- SMS notifications (Twilio)\n- RabbitMQ event consumption (payment, recharge events)\n- Scheduled plan expiry notifications\n- User notification history with pagination\n- Admin notification monitoring\n- Executive report dispatch with Base64 PDF attachment support\n- Public testing endpoints for email, SMS, and database\n\n**Architecture:**\n- Controllers: NotificationController, AdminNotificationController, AdminReportController, TestController\n- Services: NotificationService, EmailService, SmsService\n- Consumers: PaymentEventConsumer, RechargeEventConsumer\n- Scheduler: PlanExpiryScheduler (daily at 8:00 AM)\n- Repositories: NotificationRepository\n- Entities: Notification\n- Enums: NotificationType (EMAIL, SMS), NotificationCategory (PAYMENT_SUCCESS, PAYMENT_FAILED, PLAN_EXPIRY_REMINDER, PLAN_EXPIRED), NotificationStatus (PENDING, SENT, FAILED)\n\n**RabbitMQ Integration:**\n- Exchange: omnicharge.exchange\n- Queues: notification.payment.queue, notification.recharge.queue\n- Events: PaymentCompletedEvent, RechargeCompletedEvent\n- Flow: Payment/Recharge → RabbitMQ → Notification Service → Email/SMS\n\n**Scheduled Tasks:**\n- PlanExpiryScheduler: Runs daily at 8:00 AM to send expiry reminders (5 days before) and expired notifications\n\n**External Integrations:**\n- Gmail SMTP: Email delivery\n- Twilio: SMS delivery\n- Recharge Service: Feign client for expiring/expired recharge lookup\n\n**Test Coverage:**\n- 89% overall coverage (exceeds 85% target)\n- 94% controller coverage (exceeds 80% target)\n- 161 tests (all passing)\n- Controllers: 94% instruction, 80% branch\n- Services: 89% instruction, 90% branch\n\n**Key Features:**\n1. **Event-Driven Notifications**: Consumes RabbitMQ events for payment and recharge notifications\n2. **Base64 PDF Support**: AdminReportController handles Base64-encoded PDF attachments for executive reports\n3. **Scheduled Expiry Notifications**: Automated daily job for plan expiry reminders\n4. **User Notification History**: Paginated notification history with read/unread tracking\n5. **Admin Monitoring**: Admin can view all notifications across all users\n6. **Public Testing Endpoints**: Email, SMS, and database testing without authentication\n7. **Comprehensive Error Handling**: Graceful degradation with fallback logging\n\n**Notification Types:**\n- EMAIL: Email notifications via Gmail SMTP\n- SMS: SMS notifications via Twilio\n\n**Notification Categories:**\n- PAYMENT_SUCCESS: Payment completed successfully\n- PAYMENT_FAILED: Payment failed or rejected\n- PLAN_EXPIRY_REMINDER: Plan expiring in 5 days\n- PLAN_EXPIRED: Plan has expired\n\n**Notification Statuses:**\n- PENDING: Notification queued for sending\n- SENT: Notification sent successfully\n- FAILED: Notification sending failed\n\n**Security:**\n- User isolation: Users can only access their own notifications\n- Admin access: ROLE_ADMIN required for admin endpoints\n- Public testing: Test endpoints accessible without authentication\n- JWT authentication via API Gateway"
+		}
+	]
+}
