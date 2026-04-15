@@ -1,0 +1,280 @@
+<div class="flex flex-col h-full space-y-4 max-w-[1400px] mx-auto">
+
+  <!-- BREADCRUMB -->
+  <nav class="inline-flex items-center gap-2 text-sm pb-3 border-b border-slate-200">
+    <span class="text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors" (click)="backToMetrics()">Admin</span>
+    <span class="text-slate-400">/</span>
+    <span class="cursor-pointer font-medium transition-colors"
+          [ngClass]="currentView === 'metrics' ? 'text-slate-900 font-semibold' : 'text-indigo-600 hover:text-indigo-800'"
+          (click)="backToMetrics()">
+      Revenue Stream
+    </span>
+    <ng-container *ngIf="currentView === 'user-drill'">
+      <span class="text-slate-400">/</span>
+      <span class="text-slate-900 font-semibold">{{ drillContext.userEmail }}</span>
+    </ng-container>
+  </nav>
+
+  <!-- LOADING OVERLAY -->
+  <div *ngIf="loading" class="fixed inset-0 z-50 bg-white/40 backdrop-blur-sm flex justify-center items-center">
+    <mat-spinner diameter="36"></mat-spinner>
+  </div>
+
+  <!-- =================== METRICS VIEW =================== -->
+  <ng-container *ngIf="currentView === 'metrics'">
+
+    <!-- Time Filter -->
+    <div class="flex items-center gap-2 shrink-0">
+      <mat-icon class="!text-slate-400 !text-[18px]">schedule</mat-icon>
+      <div class="flex gap-1">
+        <button *ngFor="let tf of timeFilters" (click)="onTimeFilterChange(tf.days)"
+                class="px-3 py-1 rounded-full text-xs font-bold transition-all border"
+                [ngClass]="selectedTimeFilter$.value === tf.days ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'">
+          {{ tf.label }}
+        </button>
+      </div>
+    </div>
+
+    <!-- HERO KPI CARDS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0" *ngIf="analytics">
+      <!-- Gross Revenue -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Gross Revenue</p>
+        <p class="text-2xl font-black text-slate-900">{{ formatCurrency(analytics.grossRevenue) }}</p>
+        <p class="text-xs text-slate-400 mt-1">Today: {{ formatCurrency(analytics.todayRevenue) }}</p>
+      </div>
+
+      <!-- Revenue Growth -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Growth (MoM)</p>
+        <div class="flex items-center gap-2">
+          <p class="text-2xl font-black" [ngClass]="getGrowthColor(analytics.revenueGrowthPercentage)">
+            {{ analytics.revenueGrowthPercentage >= 0 ? '+' : '' }}{{ formatPercentage(analytics.revenueGrowthPercentage) }}
+          </p>
+          <div class="rounded-full p-1 border" [ngClass]="getGrowthBg(analytics.revenueGrowthPercentage)">
+            <mat-icon class="!text-[18px]" [ngClass]="getGrowthColor(analytics.revenueGrowthPercentage)">
+              {{ getGrowthIcon(analytics.revenueGrowthPercentage) }}
+            </mat-icon>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Last month: {{ formatCurrency(analytics.lastMonthRevenue) }}</p>
+      </div>
+
+      <!-- Success Rate -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-emerald-600 mb-1">Success Rate</p>
+        <p class="text-2xl font-black text-emerald-700">{{ formatPercentage(analytics.successRate) }}</p>
+        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
+          <div class="bg-emerald-500 h-1.5 rounded-full transition-all" [style.width.%]="analytics.successRate"></div>
+        </div>
+      </div>
+
+      <!-- Avg Transaction -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Avg Transaction</p>
+        <p class="text-2xl font-black text-slate-900">{{ formatCurrency(analytics.averageTransactionValue) }}</p>
+        <p class="text-xs text-slate-400 mt-1">{{ analytics.totalTransactions.toLocaleString() }} total txns</p>
+      </div>
+    </div>
+
+    <!-- MoM PERFORMANCE CARD -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm" *ngIf="analytics">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Monthly Performance</p>
+          <div class="flex items-baseline gap-3">
+            <div>
+              <p class="text-xs text-slate-400">This Month</p>
+              <p class="text-lg font-black text-slate-900">{{ formatCurrency(analytics.monthRevenue) }}</p>
+            </div>
+            <mat-icon class="!text-slate-300">arrow_forward</mat-icon>
+            <div>
+              <p class="text-xs text-slate-400">Last Month</p>
+              <p class="text-lg font-black text-slate-500">{{ formatCurrency(analytics.lastMonthRevenue) }}</p>
+            </div>
+            <div class="ml-4 rounded-lg p-2 border" [ngClass]="getGrowthBg(analytics.revenueGrowthPercentage)">
+              <div class="flex items-center gap-1">
+                <mat-icon class="!text-[16px]" [ngClass]="getGrowthColor(analytics.revenueGrowthPercentage)">{{ getGrowthIcon(analytics.revenueGrowthPercentage) }}</mat-icon>
+                <span class="text-sm font-black" [ngClass]="getGrowthColor(analytics.revenueGrowthPercentage)">{{ analytics.revenueGrowthPercentage >= 0 ? '+' : '' }}{{ formatPercentage(analytics.revenueGrowthPercentage) }}</span>
+              </div>
+              <p class="text-[10px] font-bold uppercase tracking-wider" [ngClass]="getGrowthColor(analytics.revenueGrowthPercentage)">MoM Growth</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVENUE AREA CHART -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm" *ngIf="analytics">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="text-sm font-black text-slate-800">Revenue Growth Trend</h3>
+          <p class="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Daily Revenue & Transaction Volume</p>
+        </div>
+        <mat-icon class="!text-slate-300">show_chart</mat-icon>
+      </div>
+      <div class="min-h-[320px]" *ngIf="revenueChartOptions">
+        <div echarts [options]="revenueChartOptions" class="w-full h-[320px]"></div>
+      </div>
+      <div class="min-h-[320px] flex items-center justify-center" *ngIf="!revenueChartOptions">
+        <p class="text-sm text-slate-400">No revenue data available for this period</p>
+      </div>
+    </div>
+
+    <!-- Transaction Status Mini-cards -->
+    <div class="grid grid-cols-3 gap-4 shrink-0" *ngIf="analytics">
+      <div class="bg-emerald-50 rounded-xl border border-emerald-200 p-4 text-center">
+        <p class="text-xs uppercase font-bold text-emerald-600 tracking-wider">Successful</p>
+        <p class="text-2xl font-black text-emerald-800 mt-1">{{ analytics.successfulTransactions.toLocaleString() }}</p>
+      </div>
+      <div class="bg-rose-50 rounded-xl border border-rose-200 p-4 text-center">
+        <p class="text-xs uppercase font-bold text-rose-600 tracking-wider">Failed</p>
+        <p class="text-2xl font-black text-rose-800 mt-1">{{ analytics.failedTransactions.toLocaleString() }}</p>
+      </div>
+      <div class="bg-amber-50 rounded-xl border border-amber-200 p-4 text-center">
+        <p class="text-xs uppercase font-bold text-amber-600 tracking-wider">Pending</p>
+        <p class="text-2xl font-black text-amber-800 mt-1">{{ analytics.pendingTransactions.toLocaleString() }}</p>
+      </div>
+    </div>
+
+    <!-- WHALE LEADERBOARD -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" *ngIf="analytics?.topSpenders?.length">
+      <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+        <div>
+          <h3 class="text-sm font-black text-slate-800">Whale Leaderboard</h3>
+          <p class="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Top Spenders by Volume</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-medium">Show:</span>
+          <select [ngModel]="topSpendersLimit" (ngModelChange)="onTopSpendersLimitChange($event)"
+                  class="appearance-none bg-slate-50 border border-slate-200 text-xs rounded px-2 py-1 font-bold text-slate-700 focus:outline-none">
+            <option *ngFor="let opt of topSpendersLimitOptions" [ngValue]="opt">{{ opt }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto custom-scrollbar relative">
+        <div *ngIf="topSpendersLoading" class="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10">
+          <mat-spinner diameter="28"></mat-spinner>
+        </div>
+        <table mat-table [dataSource]="analytics!.topSpenders" class="w-full">
+          <ng-container matColumnDef="rank">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4 w-16">#</th>
+            <td mat-cell *matCellDef="let s; let i = index" class="!px-4 !py-2">
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-black" [ngClass]="getRankBadgeColor(i + 1)">{{ i + 1 }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="userEmail">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">User</th>
+            <td mat-cell *matCellDef="let s" class="!px-4 !py-2">
+              <span class="text-left group cursor-pointer" (click)="navigateToUser(s.userId, s.userEmail, s.userMobile)">
+                <p class="text-sm font-bold text-indigo-900 group-hover:text-indigo-600 transition-colors">{{ s.fullName || s.userEmail || 'Unknown' }}</p>
+                <p class="text-xs text-slate-400">{{ s.userEmail }}</p>
+                <p class="text-[10px] text-slate-400">{{ s.userMobile || 'No mobile' }} · Joined {{ s.registrationDate | date:'MMM y' }}</p>
+              </span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="transactionCount">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Txns</th>
+            <td mat-cell *matCellDef="let s" class="!px-4 !py-2 text-sm font-black text-slate-800">{{ s.transactionCount }}</td>
+          </ng-container>
+          <ng-container matColumnDef="totalSpent">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Total Spent</th>
+            <td mat-cell *matCellDef="let s" class="!px-4 !py-2 text-sm font-black text-slate-800">{{ formatCurrency(s.totalSpent) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="successRate">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Success</th>
+            <td mat-cell *matCellDef="let s" class="!px-4 !py-2">
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-slate-100 rounded-full h-1.5 max-w-[80px]">
+                  <div class="bg-emerald-500 h-1.5 rounded-full" [style.width.%]="getProgressBarWidth(s.successRate)"></div>
+                </div>
+                <span class="text-xs font-bold text-slate-600">{{ formatPercentage(s.successRate) }}</span>
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="averageTransactionValue">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Avg</th>
+            <td mat-cell *matCellDef="let s" class="!px-4 !py-2 text-sm text-slate-600">{{ formatCurrency(s.averageTransactionValue) }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="topSpendersColumns; sticky: true" class="!h-12 shadow-sm"></tr>
+          <tr mat-row *matRowDef="let row; columns: topSpendersColumns;" class="hover:bg-slate-50 hover:shadow-sm transition-all !h-12 cursor-pointer" (click)="navigateToUser(row.userId, row.userEmail, row.userMobile)"></tr>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- =================== USER DRILL-DOWN =================== -->
+  <ng-container *ngIf="currentView === 'user-drill'">
+    <!-- User Context Card -->
+    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex items-center gap-4 shrink-0">
+      <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-black text-lg">
+        {{ (drillContext.userEmail || 'U').charAt(0).toUpperCase() }}
+      </div>
+      <div>
+        <p class="text-sm font-bold text-slate-800">{{ drillContext.userEmail }}</p>
+        <p class="text-xs text-slate-400">{{ drillContext.userMobile }} · User #{{ drillContext.userId }}</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-col md:flex-row gap-4 shrink-0">
+      <div class="relative w-full md:max-w-sm">
+        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 !text-slate-400 !text-[18px]">search</mat-icon>
+        <input type="text" [ngModel]="userTransactionsSearch" (ngModelChange)="onSearchChange($event)"
+               class="w-full bg-white border border-slate-200 text-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder:text-slate-400"
+               placeholder="Search transaction...">
+      </div>
+      <select [(ngModel)]="userTransactionsStatusFilter" (ngModelChange)="onStatusFilterChange()"
+              class="bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none">
+        <option value="">All Status</option>
+        <option value="SUCCESS">Success</option>
+        <option value="FAILED">Failed</option>
+        <option value="PENDING">Pending</option>
+      </select>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col" *ngIf="userTransactions">
+      <div class="overflow-x-auto flex-1 custom-scrollbar">
+        <table mat-table [dataSource]="userTransactions.content" matSort [matSortActive]="userTransactionsSortBy" [matSortDirection]="matSortDirection" (matSortChange)="onUserTransactionSort($event)" class="w-full">
+          <ng-container matColumnDef="transactionId">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Txn ID</th>
+            <td mat-cell *matCellDef="let t" class="!px-4 !py-2 text-xs font-mono text-slate-500">{{ t.transactionId | slice:0:12 }}...</td>
+          </ng-container>
+          <ng-container matColumnDef="amount">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Amount</th>
+            <td mat-cell *matCellDef="let t" class="!px-4 !py-2 text-sm font-black text-slate-800">₹{{ t.amount }}</td>
+          </ng-container>
+          <ng-container matColumnDef="paymentMethod">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Method</th>
+            <td mat-cell *matCellDef="let t" class="!px-4 !py-2 text-xs font-bold uppercase text-slate-500 tracking-wider">{{ t.paymentMethod }}</td>
+          </ng-container>
+          <ng-container matColumnDef="operatorName">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Operator</th>
+            <td mat-cell *matCellDef="let t" class="!px-4 !py-2 text-sm text-slate-600">{{ t.operatorName || '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="planName">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Plan</th>
+            <td mat-cell *matCellDef="let t" class="!px-4 !py-2 text-sm text-slate-600">{{ t.planName || '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Status</th>
+            <td mat-cell *matCellDef="let t" class="!px-4 !py-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold" [ngClass]="getStatusColor(t.status)">{{ t.status }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="createdDate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Date</th>
+            <td mat-cell *matCellDef="let t" class="!px-4 !py-2 text-xs text-slate-500">{{ t.createdDate | date:'MMM d, y HH:mm' }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="userTransactionsColumns; sticky: true" class="!h-12 shadow-sm"></tr>
+          <tr mat-row *matRowDef="let row; columns: userTransactionsColumns;" class="hover:bg-slate-50 transition-colors !h-12"></tr>
+        </table>
+      </div>
+      <mat-paginator [length]="userTransactions.totalElements" [pageSize]="userTransactionsSize" [pageIndex]="userTransactionsPage"
+                     [pageSizeOptions]="[10, 20, 50]" (page)="onUserTransactionsPageChange($event)"
+                     class="!border-t !border-slate-100 !bg-slate-50/50"></mat-paginator>
+    </div>
+  </ng-container>
+</div>

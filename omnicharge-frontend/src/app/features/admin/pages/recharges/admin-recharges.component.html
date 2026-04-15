@@ -1,0 +1,250 @@
+<div class="flex flex-col h-full space-y-4 max-w-[1400px] mx-auto">
+
+  <!-- BREADCRUMB -->
+  <nav class="inline-flex items-center gap-2 text-sm pb-3 border-b border-slate-200">
+    <span class="text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors" (click)="backToMetrics()">Admin</span>
+    <span class="text-slate-400">/</span>
+    <span class="cursor-pointer font-medium transition-colors"
+          [ngClass]="currentView === 'metrics' ? 'text-slate-900 font-semibold' : 'text-indigo-600 hover:text-indigo-800'"
+          (click)="backToMetrics()">
+      Recharge Hub
+    </span>
+    <ng-container *ngIf="currentView === 'operator-drill' || currentView === 'plan-drill'">
+      <span class="text-slate-400">/</span>
+      <span class="cursor-pointer font-medium transition-colors"
+            [ngClass]="currentView === 'operator-drill' ? 'text-slate-900 font-semibold' : 'text-indigo-600 hover:text-indigo-800'"
+            (click)="currentView === 'plan-drill' ? backToOperator() : null">
+        {{ drillContext.operatorName }}
+      </span>
+    </ng-container>
+    <ng-container *ngIf="currentView === 'plan-drill'">
+      <span class="text-slate-400">/</span>
+      <span class="text-slate-900 font-semibold">{{ drillContext.planName }}</span>
+    </ng-container>
+  </nav>
+
+  <!-- LOADING OVERLAY -->
+  <div *ngIf="loading" class="fixed inset-0 z-50 bg-white/40 backdrop-blur-sm flex justify-center items-center">
+    <mat-spinner diameter="36"></mat-spinner>
+  </div>
+
+  <!-- =================== METRICS VIEW =================== -->
+  <ng-container *ngIf="currentView === 'metrics'">
+
+    <!-- Time Filter Row -->
+    <div class="flex items-center gap-2 shrink-0">
+      <mat-icon class="!text-slate-400 !text-[18px]">schedule</mat-icon>
+      <div class="flex gap-1">
+        <button *ngFor="let tf of timeFilters" (click)="onTimeFilterChange(tf.days)"
+                class="px-3 py-1 rounded-full text-xs font-bold transition-all border"
+                [ngClass]="selectedTimeFilter$.value === tf.days ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'">
+          {{ tf.label }}
+        </button>
+      </div>
+    </div>
+
+    <!-- HERO KPI CARDS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0" *ngIf="analytics">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Total Revenue</p>
+        <p class="text-2xl font-black text-slate-900">{{ formatCurrency(analytics.totalRevenue) }}</p>
+        <p class="text-xs text-slate-400 mt-1">Today: {{ formatCurrency(analytics.todayRevenue) }}</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Total Recharges</p>
+        <p class="text-2xl font-black text-slate-900">{{ analytics.totalRecharges.toLocaleString() }}</p>
+        <p class="text-xs text-slate-400 mt-1">Today: {{ analytics.todayRecharges.toLocaleString() }}</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-emerald-600 mb-1">Success Rate</p>
+        <p class="text-2xl font-black text-emerald-700">{{ formatPercentage(analytics.successRate) }}</p>
+        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
+          <div class="bg-emerald-500 h-1.5 rounded-full transition-all" [style.width.%]="analytics.successRate"></div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Active Ratio</p>
+        <p class="text-2xl font-black text-slate-900">{{ formatPercentage(analytics.activeRatio) }}</p>
+        <p class="text-xs text-slate-400 mt-1">{{ analytics.activeRecharges }} active / {{ analytics.expiredRecharges }} expired</p>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" *ngIf="analytics">
+      <!-- Market Share Doughnut -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-sm font-black text-slate-800">Operator Market Share</h3>
+            <p class="text-[11px] text-slate-400 uppercase font-bold tracking-wider">By Recharge Volume</p>
+          </div>
+          <mat-icon class="!text-slate-300">donut_large</mat-icon>
+        </div>
+        <div class="flex-1 min-h-[280px]" *ngIf="marketShareChartOptions">
+          <div echarts [options]="marketShareChartOptions" (chartClick)="onChartClick($event)" class="w-full h-full cursor-pointer"></div>
+        </div>
+      </div>
+
+      <!-- Status Distribution -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-sm font-black text-slate-800">Transaction Status</h3>
+            <p class="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Success / Failed / Pending</p>
+          </div>
+          <mat-icon class="!text-slate-300">pie_chart</mat-icon>
+        </div>
+        <div class="flex-1 flex items-center justify-center gap-8">
+          <div class="min-h-[200px] w-[200px]" *ngIf="statusDistChartOptions">
+            <div echarts [options]="statusDistChartOptions" class="w-full h-full"></div>
+          </div>
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span class="text-sm font-bold text-slate-700">{{ analytics.successCount.toLocaleString() }} Success</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+              <span class="text-sm font-bold text-slate-700">{{ analytics.failedCount.toLocaleString() }} Failed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <span class="text-sm font-bold text-slate-700">{{ analytics.pendingCount.toLocaleString() }} Pending</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP PLANS TABLE -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" *ngIf="analytics?.topPlans?.length">
+      <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+        <h3 class="text-sm font-black text-slate-800">Top Performing Plans</h3>
+        <span class="text-[10px] uppercase font-bold text-indigo-600 tracking-wider bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{{ analytics!.topPlans.length }} Plans</span>
+      </div>
+      <table mat-table [dataSource]="analytics!.topPlans" class="w-full">
+        <ng-container matColumnDef="planName">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Plan</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm font-bold text-indigo-900 cursor-pointer hover:text-indigo-600" (click)="navigateToPlan(p.planId, p.planName, p.operatorId, p.operatorName)">{{ p.planName }}</td>
+        </ng-container>
+        <ng-container matColumnDef="operatorName">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Operator</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm text-slate-600 cursor-pointer hover:text-indigo-600" (click)="navigateToOperator(p.operatorId, p.operatorName)">{{ p.operatorName }}</td>
+        </ng-container>
+        <ng-container matColumnDef="rechargeCount">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Volume</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm font-black text-slate-800">{{ p.rechargeCount }}</td>
+        </ng-container>
+        <ng-container matColumnDef="totalRevenue">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Revenue</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm font-bold text-slate-800">{{ formatCurrency(p.totalRevenue) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="averageAmount">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Avg</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm text-slate-600">{{ formatCurrency(p.averageAmount) }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="topPlansColumns" class="!h-12 shadow-sm"></tr>
+        <tr mat-row *matRowDef="let row; columns: topPlansColumns;" class="hover:bg-slate-50 transition-colors !h-12"></tr>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- =================== OPERATOR DRILL VIEW =================== -->
+  <ng-container *ngIf="currentView === 'operator-drill'">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0" *ngIf="operatorPlans">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Total Revenue</p>
+        <p class="text-2xl font-black text-slate-900">{{ formatCurrency(operatorPlans.totalRevenue) }}</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Total Recharges</p>
+        <p class="text-2xl font-black text-slate-900">{{ operatorPlans.totalRecharges.toLocaleString() }}</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">Plans Tracked</p>
+        <p class="text-2xl font-black text-slate-900">{{ operatorPlans.plans.length || 0 }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1" *ngIf="operatorPlans?.plans?.length">
+      <div class="p-4 border-b border-slate-100"><h3 class="text-sm font-black text-slate-800">Plan Performance Matrix</h3></div>
+      <table mat-table [dataSource]="operatorPlans!.plans" class="w-full">
+        <ng-container matColumnDef="planName">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Plan</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm font-bold text-indigo-900 cursor-pointer hover:text-indigo-600" (click)="navigateToPlan(p.planId, p.planName)">{{ p.planName }}</td>
+        </ng-container>
+        <ng-container matColumnDef="rechargeCount">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Volume</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm font-black">{{ p.rechargeCount }}</td>
+        </ng-container>
+        <ng-container matColumnDef="totalRevenue">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Revenue</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm font-bold">{{ formatCurrency(p.totalRevenue) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="averageAmount">
+          <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Avg</th>
+          <td mat-cell *matCellDef="let p" class="!px-4 !py-2 text-sm text-slate-600">{{ formatCurrency(p.averageAmount) }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="operatorPlansColumns" class="!h-12 shadow-sm"></tr>
+        <tr mat-row *matRowDef="let row; columns: operatorPlansColumns;" class="hover:bg-slate-50 transition-colors !h-12"></tr>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- =================== PLAN DRILL VIEW =================== -->
+  <ng-container *ngIf="currentView === 'plan-drill'">
+    <div class="flex flex-col md:flex-row gap-4 shrink-0">
+      <div class="relative w-full md:max-w-sm">
+        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 !text-slate-400 !text-[18px]">search</mat-icon>
+        <input type="text" [ngModel]="planHistorySearch" (ngModelChange)="onSearchChange($event)"
+               class="w-full bg-white border border-slate-200 text-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder:text-slate-400"
+               placeholder="Search by mobile...">
+      </div>
+      <select [(ngModel)]="planHistoryStatusFilter" (ngModelChange)="onStatusFilterChange()"
+              class="bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none">
+        <option value="">All Status</option>
+        <option value="SUCCESS">Success</option>
+        <option value="FAILED">Failed</option>
+        <option value="PENDING">Pending</option>
+      </select>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col" *ngIf="planHistory">
+      <div class="overflow-x-auto flex-1 custom-scrollbar">
+        <table mat-table [dataSource]="planHistory.content" matSort [matSortActive]="planHistorySortBy" [matSortDirection]="matSortDirection" (matSortChange)="onPlanHistorySort($event)" class="w-full">
+          <ng-container matColumnDef="rechargeId">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">ID</th>
+            <td mat-cell *matCellDef="let r" class="!px-4 !py-2 text-xs font-mono text-slate-500">{{ r.rechargeId | slice:0:12 }}...</td>
+          </ng-container>
+          <ng-container matColumnDef="userFullName">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">User</th>
+            <td mat-cell *matCellDef="let r" class="!px-4 !py-2 text-sm font-semibold text-slate-800">{{ r.userFullName || 'N/A' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="mobileNumber">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Mobile</th>
+            <td mat-cell *matCellDef="let r" class="!px-4 !py-2 text-sm text-slate-600">{{ r.mobileNumber }}</td>
+          </ng-container>
+          <ng-container matColumnDef="amount">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Amount</th>
+            <td mat-cell *matCellDef="let r" class="!px-4 !py-2 text-sm font-black text-slate-800">₹{{ r.amount }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Status</th>
+            <td mat-cell *matCellDef="let r" class="!px-4 !py-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold" [ngClass]="getStatusColor(r.status)">{{ r.status }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="createdDate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="!bg-slate-50 !font-bold !text-[11px] uppercase tracking-wider !py-3 !px-4">Date</th>
+            <td mat-cell *matCellDef="let r" class="!px-4 !py-2 text-xs text-slate-500">{{ r.createdDate | date:'MMM d, y HH:mm' }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="planHistoryColumns; sticky: true" class="!h-12 shadow-sm"></tr>
+          <tr mat-row *matRowDef="let row; columns: planHistoryColumns;" class="hover:bg-slate-50 transition-colors !h-12"></tr>
+        </table>
+      </div>
+      <mat-paginator [length]="planHistory.totalElements" [pageSize]="planHistorySize" [pageIndex]="planHistoryPage"
+                     [pageSizeOptions]="[10, 20, 50]" (page)="onPlanHistoryPageChange($event)"
+                     class="!border-t !border-slate-100 !bg-slate-50/50"></mat-paginator>
+    </div>
+  </ng-container>
+</div>
